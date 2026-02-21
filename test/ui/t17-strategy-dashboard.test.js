@@ -8,4 +8,5 @@ test('dashboard page contains strategy cockpit sections', async () => {
   assert.match(html, /Your Team vs Elite/);
   assert.match(html, /Transfer Radar/);
   assert.match(html, /Market Momentum/);
+  assert.match(html, /Upcoming Week Plan/);
 });

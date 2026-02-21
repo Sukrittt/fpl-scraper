@@ -203,9 +203,14 @@ function renderVideoDiagnostics(videos) {
 }
 
 function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null) {
+  const fmtPlayer = (row) => row?.player_name ? `${row.player_name} (#${row.player_id})` : `#${row?.player_id}`;
+  const currentGw = Number(strategyTeam?.snapshot_gw || strategyTemplate?.[0]?.snapshot_gw || 0) || null;
   const topOwned = [...strategyTemplate]
     .sort((a, b) => num(b.template_ownership_pct) - num(a.template_ownership_pct))
     .slice(0, 5);
+  const topCaptains = [...strategyTemplate]
+    .sort((a, b) => num(b.captain_pct) - num(a.captain_pct))
+    .slice(0, 3);
   const rising = [...strategyTemplate]
     .sort((a, b) => num(b.buy_momentum) - num(a.buy_momentum))
     .slice(0, 5);
@@ -217,14 +222,48 @@ function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null) {
     .map((row) => `<li>${row.player_name || row.player_id}</li>`).join('');
   const outRows = (strategyTeam?.recommended_out || []).slice(0, 5)
     .map((row) => `<li>${row.player_name || row.player_id}</li>`).join('');
-  const topRows = topOwned.map((row) => `<li>#${row.player_id} (${num(row.template_ownership_pct)}%)</li>`).join('');
-  const riseRows = rising.map((row) => `<li>#${row.player_id} (+${num(row.buy_momentum)})</li>`).join('');
-  const fallRows = falling.map((row) => `<li>#${row.player_id} (-${num(row.sell_momentum)})</li>`).join('');
+  const topRows = topOwned.map((row) => `<li>${fmtPlayer(row)} (${num(row.template_ownership_pct)}%)</li>`).join('');
+  const captainRows = topCaptains.map((row) => `<li>${fmtPlayer(row)} (${num(row.captain_pct)}%)</li>`).join('');
+  const riseRows = rising.map((row) => `<li>${fmtPlayer(row)} (+${num(row.buy_momentum)})</li>`).join('');
+  const fallRows = falling.map((row) => `<li>${fmtPlayer(row)} (-${num(row.sell_momentum)})</li>`).join('');
+
+  const buyTarget = strategyTeam?.recommended_in?.[0] || topOwned[0] || null;
+  const sellTarget = strategyTeam?.recommended_out?.[0] || null;
+  const captainTarget = topCaptains[0] || null;
+  const gapCount = (strategyTeam?.recommended_in || []).length;
+  const doNowRows = [
+    buyTarget
+      ? `Make this transfer first: ${buyTarget.player_name || fmtPlayer(buyTarget)}.`
+      : 'No clear buy target yet.',
+    captainTarget
+      ? `Captain ${captainTarget.player_name || fmtPlayer(captainTarget)} (${num(captainTarget.captain_pct)}%).`
+      : 'No strong captain consensus yet.',
+  ].map((line) => `<li>${line}</li>`).join('');
+  const optionalRows = [
+    gapCount > 0
+      ? `If possible, close one more template gap (${gapCount} open).`
+      : 'Optional upside move only; team/template alignment is stable.',
+  ].map((line) => `<li>${line}</li>`).join('');
+  const avoidRows = [
+    sellTarget
+      ? `Avoid holding ${sellTarget.player_name || fmtPlayer(sellTarget)} if you need one clear sell.`
+      : 'Avoid forcing a sell without clear downside signal.',
+    'Avoid overreacting to flat momentum values this week.',
+  ].map((line) => `<li>${line}</li>`).join('');
+  const gapRows = (strategyTeam?.recommended_in || []).slice(0, 8).map((row) => [
+    '<li>',
+    `<strong>${row.player_name || fmtPlayer(row)}</strong>`,
+    `<br /><span>Template ownership ${num(row.template_ownership_pct)}% · buy momentum +${num(row.buy_momentum)}</span>`,
+    '</li>',
+  ].join('')).join('');
 
   return [
     '<section class="meta-card wide">',
     '<h2>Template Pulse</h2>',
+    '<p><strong>Top Owned:</strong></p>',
     `<ul class="run-list">${topRows || '<li>No template rows yet.</li>'}</ul>`,
+    '<p><strong>Captain Trend:</strong></p>',
+    `<ul class="run-list">${captainRows || '<li>No captain rows yet.</li>'}</ul>`,
     '</section>',
     '<section class="meta-card">',
     '<h2>Your Team vs Elite</h2>',
@@ -241,6 +280,21 @@ function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null) {
     '<h2>Market Momentum</h2>',
     `<p><strong>Rising:</strong></p><ul class="run-list">${riseRows || '<li>None</li>'}</ul>`,
     `<p><strong>Falling:</strong></p><ul class="run-list">${fallRows || '<li>None</li>'}</ul>`,
+    '</section>',
+    '<section class="meta-card wide">',
+    `<h2>Upcoming Week Plan ${currentGw ? `(GW ${currentGw})` : '(GW n/a)'}</h2>`,
+    '<p>Action summary for the upcoming gameweek from template, team-fit, and captaincy signals.</p>',
+    '<p><strong>Do now</strong></p>',
+    `<ul class="run-list">${doNowRows}</ul>`,
+    '<p><strong>Optional</strong></p>',
+    `<ul class="run-list">${optionalRows}</ul>`,
+    '<p><strong>Avoid this week</strong></p>',
+    `<ul class="run-list">${avoidRows}</ul>`,
+    '</section>',
+    '<section class="meta-card wide">',
+    `<h2>Template Gaps to Fill ${currentGw ? `(GW ${currentGw})` : '(GW n/a)'}</h2>`,
+    '<p>Players in the elite template that your current team is missing.</p>',
+    `<ul class="run-list">${gapRows || '<li>No major template gaps detected.</li>'}</ul>`,
     '</section>',
   ].join('');
 }
