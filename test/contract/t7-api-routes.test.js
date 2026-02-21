@@ -8,6 +8,9 @@ import {
   getEventsHandler,
   getVideosHandler,
   postSyncRunHandler,
+  getStrategyTemplateHandler,
+  getStrategyTeamHandler,
+  postStrategyRunHandler,
 } from '../../apps/web/src/app/api/handlers.js';
 
 test('GET /api/settings returns stored settings', async () => {
@@ -29,7 +32,15 @@ test('GET /api/recommendations returns contract-compliant shape', async () => {
   const db = createDatabase();
   await runMigrations(db);
 
+  await db.insert('pipeline_runs', {
+    run_id: 'run-1',
+    started_at: '2026-02-21T00:00:00Z',
+    finished_at: '2026-02-21T00:01:00Z',
+    status: 'completed',
+  });
+
   await db.insert('recommendations_snapshot', {
+    run_id: 'run-1',
     player_id: 1,
     player_name: 'Salah',
     action: 'BUY',
@@ -48,6 +59,37 @@ test('GET /api/recommendations returns contract-compliant shape', async () => {
   assert.equal(typeof rec.player_name, 'string');
   assert.equal(['BUY', 'SELL', 'HOLD'].includes(rec.action), true);
   assert.equal(Array.isArray(rec.reasons), true);
+  assert.equal(typeof rec.template_ownership_pct, 'number');
+  assert.equal(typeof rec.template_gap_score, 'number');
+  assert.equal(typeof rec.momentum_signal, 'number');
+  assert.equal(typeof rec.data_freshness?.fetched_at, 'string');
+});
+
+test('GET /api/recommendations returns latest run rows only', async () => {
+  const db = createDatabase();
+  await runMigrations(db);
+
+  await db.insert('pipeline_runs', {
+    run_id: 'run-old',
+    started_at: '2026-02-20T00:00:00Z',
+    finished_at: '2026-02-20T00:01:00Z',
+    status: 'completed',
+  });
+  await db.insert('pipeline_runs', {
+    run_id: 'run-new',
+    started_at: '2026-02-21T00:00:00Z',
+    finished_at: '2026-02-21T00:01:00Z',
+    status: 'completed',
+  });
+
+  await db.insert('recommendations_snapshot', { run_id: 'run-old', player_id: 1, player_name: 'Old', action: 'SELL', confidence: 50, score_5gw: 30, updated_at: '2026-02-20T00:00:30Z' });
+  await db.insert('recommendations_snapshot', { run_id: 'run-new', player_id: 2, player_name: 'New A', action: 'BUY', confidence: 90, score_5gw: 80, updated_at: '2026-02-21T00:00:30Z' });
+  await db.insert('recommendations_snapshot', { run_id: 'run-new', player_id: 3, player_name: 'New B', action: 'HOLD', confidence: 70, score_5gw: 60, updated_at: '2026-02-21T00:00:31Z' });
+
+  const response = await getRecommendationsHandler({ db });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.length, 2);
+  assert.equal(response.body.every((row) => row.run_id === 'run-new'), true);
 });
 
 test('GET /api/videos can filter by status', async () => {
@@ -98,4 +140,55 @@ test('POST /api/sync/run triggers pipeline', async () => {
   assert.equal(response.status, 202);
   assert.equal(called, true);
   assert.equal(response.body.run_id, 'run-1');
+});
+
+test('GET /api/strategy/template returns rows sorted by ownership', async () => {
+  const db = createDatabase();
+  await runMigrations(db);
+  await db.insert('elite_template_snapshot', { snapshot_gw: 1, player_id: 1, template_ownership_pct: 22, buy_momentum: 2, created_at: '2026-02-21T00:00:00Z' });
+  await db.insert('elite_template_snapshot', { snapshot_gw: 1, player_id: 1, template_ownership_pct: 12, buy_momentum: 0, created_at: '2026-02-20T00:00:00Z' });
+  await db.insert('elite_template_snapshot', { snapshot_gw: 1, player_id: 2, template_ownership_pct: 55, created_at: '2026-02-21T00:00:00Z' });
+
+  const response = await getStrategyTemplateHandler({ db, query: { limit: 5 } });
+  assert.equal(response.status, 200);
+  assert.equal(response.body[0].player_id, 2);
+  assert.equal(response.body.filter((row) => row.player_id === 1).length, 1);
+  assert.equal(response.body.find((row) => row.player_id === 1)?.template_ownership_pct, 22);
+  assert.equal(typeof response.body[0].data_freshness?.fetched_at, 'string');
+});
+
+test('GET /api/strategy/team returns latest insight for entry', async () => {
+  const db = createDatabase();
+  await runMigrations(db);
+  await db.insert('team_strategy_insights', { entry_id: 123, confidence: 60, diagnostic_code: null, created_at: '2026-02-20T00:00:00Z' });
+  await db.insert('team_strategy_insights', { entry_id: 123, confidence: 78, diagnostic_code: 'no_cohort_rows', created_at: '2026-02-21T00:00:00Z' });
+
+  const response = await getStrategyTeamHandler({ db, query: { entry_id: 123 } });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.confidence, 78);
+  assert.equal(response.body.diagnostic_code, 'no_cohort_rows');
+  assert.equal(typeof response.body.data_freshness?.fetched_at, 'string');
+});
+
+test('GET /api/strategy/team returns diagnostic code when no strategy rows exist', async () => {
+  const db = createDatabase();
+  await runMigrations(db);
+
+  const response = await getStrategyTeamHandler({ db, query: { entry_id: 123 } });
+  assert.equal(response.status, 200);
+  assert.equal(response.body.confidence, 0);
+  assert.equal(typeof response.body.diagnostic_code, 'string');
+});
+
+test('POST /api/strategy/run triggers strategy pipeline', async () => {
+  let called = false;
+  const response = await postStrategyRunHandler({
+    runStrategy: async () => {
+      called = true;
+      return { status: 'completed' };
+    },
+  });
+
+  assert.equal(response.status, 202);
+  assert.equal(called, true);
 });

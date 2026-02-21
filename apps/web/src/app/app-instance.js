@@ -25,6 +25,12 @@ function createDefaultClients() {
         async fetchBootstrapPlayers() {
           return [];
         },
+        async fetchCurrentEvent() {
+          return 1;
+        },
+        async fetchTopManagers() {
+          return [];
+        },
         async fetchTeamByEntryId() {
           return [];
         },

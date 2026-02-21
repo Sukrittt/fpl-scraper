@@ -3,24 +3,24 @@
 @tailwind utilities;
 
 :root {
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --primary: 215 78% 34%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 94%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 210 40% 94%;
-  --muted-foreground: 215 16% 38%;
-  --accent: 210 40% 94%;
-  --accent-foreground: 222 47% 11%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214 32% 90%;
-  --input: 214 32% 90%;
-  --ring: 215 78% 34%;
-  --radius: 0.75rem;
+  --background: 224 24% 8%;
+  --foreground: 210 36% 92%;
+  --card: 226 24% 12%;
+  --card-foreground: 210 36% 92%;
+  --primary: 182 93% 54%;
+  --primary-foreground: 224 24% 8%;
+  --secondary: 229 20% 18%;
+  --secondary-foreground: 210 36% 92%;
+  --muted: 229 18% 18%;
+  --muted-foreground: 216 18% 66%;
+  --accent: 231 22% 21%;
+  --accent-foreground: 210 36% 92%;
+  --destructive: 0 70% 55%;
+  --destructive-foreground: 220 33% 96%;
+  --border: 228 20% 26%;
+  --input: 228 20% 26%;
+  --ring: 182 93% 54%;
+  --radius: 0.65rem;
 }
 
 * {
@@ -29,5 +29,101 @@
 
 body {
   @apply bg-background text-foreground antialiased;
-  background-image: radial-gradient(circle at top, #f8fbff, #e7eef7 55%, #e1e9f3 100%);
+  font-family: 'Space Grotesk', Manrope, 'Avenir Next', sans-serif;
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(0, 250, 255, 0.08), transparent 34%),
+    radial-gradient(circle at 92% 10%, rgba(0, 170, 255, 0.08), transparent 36%),
+    linear-gradient(180deg, #101521 0%, #0c111c 55%, #080c16 100%);
+  min-height: 100vh;
+}
+
+.cockpit-surface {
+  position: relative;
+}
+
+.cockpit-surface::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  z-index: -1;
+  border-radius: 24px;
+  background:
+    linear-gradient(120deg, rgba(13, 26, 44, 0.92), rgba(10, 16, 30, 0.92)),
+    repeating-linear-gradient(
+      90deg,
+      rgba(40, 90, 110, 0.08) 0px,
+      rgba(40, 90, 110, 0.08) 1px,
+      transparent 1px,
+      transparent 36px
+    );
+  border: 1px solid rgba(60, 90, 120, 0.35);
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.45),
+    inset 0 0 60px rgba(0, 255, 255, 0.03);
+  animation: gridShift 16s linear infinite;
+}
+
+.neon-card {
+  background: linear-gradient(180deg, rgba(24, 33, 49, 0.95), rgba(18, 24, 38, 0.94));
+  border-color: rgba(72, 106, 132, 0.45);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 240, 255, 0.04),
+    0 8px 26px rgba(0, 0, 0, 0.26);
+}
+
+.sync-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #00d7ff;
+  box-shadow: 0 0 14px rgba(0, 215, 255, 0.9);
+}
+
+.sync-dot.is-active {
+  animation: syncPulse 1.2s ease-in-out infinite;
+}
+
+.sync-ring {
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border: 2px solid rgba(0, 215, 255, 0.25);
+  border-top-color: rgba(0, 215, 255, 0.95);
+}
+
+.sync-ring.is-active {
+  animation: spin 0.85s linear infinite;
+}
+
+.poll-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.poll-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(120deg, transparent 0%, rgba(0, 224, 255, 0.11) 40%, transparent 80%);
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes syncPulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.75; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shimmer {
+  to { transform: translateX(100%); }
+}
+
+@keyframes gridShift {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 0 0, 36px 0; }
 }

@@ -52,7 +52,8 @@ export function createSupabaseDatabase({ client }) {
         }
       }
 
-      const result = await client.from(table).upsert(payload);
+      const options = table === 'pipeline_runs' ? { onConflict: 'run_id' } : undefined;
+      const result = await client.from(table).upsert(payload, options);
       unwrapError(result, table, 'upsert');
     },
 
@@ -66,9 +67,30 @@ export function createSupabaseDatabase({ client }) {
     },
 
     async getAll(table) {
-      const result = await client.from(table).select('*');
-      unwrapError(result, table, 'select all');
-      return result.data || [];
+      const pageSize = 1000;
+      const rows = [];
+      const baseQuery = client.from(table).select('*');
+
+      if (typeof baseQuery.range !== 'function') {
+        const result = await baseQuery;
+        unwrapError(result, table, 'select all');
+        return result.data || [];
+      }
+
+      for (let page = 0; page < 100; page += 1) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        const result = await client.from(table).select('*').range(from, to);
+        unwrapError(result, table, 'select all');
+        const pageRows = result.data || [];
+        rows.push(...pageRows);
+
+        if (pageRows.length < pageSize) {
+          break;
+        }
+      }
+
+      return rows;
     },
   };
 }

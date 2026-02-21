@@ -153,7 +153,7 @@ async function fetchTranscriptViaYtDlp({ videoId, fetchFn, watchBaseUrl, execFil
     const metadata = JSON.parse(stdout || '{}');
     const captionUrl = pickCaptionUrlFromYtDlpJson(metadata);
     if (!captionUrl) {
-      return null;
+      return { transcript: null, reason: 'ytdlp_no_caption_url' };
     }
 
     const url = captionUrl.includes('fmt=json3')
@@ -162,12 +162,18 @@ async function fetchTranscriptViaYtDlp({ videoId, fetchFn, watchBaseUrl, execFil
 
     const payload = await fetchJsonPayload(fetchFn, url);
     if (!payload) {
-      return null;
+      return { transcript: null, reason: 'ytdlp_caption_payload_unavailable' };
     }
 
-    return transcriptFromJson3(payload);
-  } catch {
-    return null;
+    const transcript = transcriptFromJson3(payload);
+    return transcript
+      ? { transcript, reason: null }
+      : { transcript: null, reason: 'ytdlp_caption_empty' };
+  } catch (error) {
+    if (String(error?.message || '').includes('ENOENT')) {
+      return { transcript: null, reason: 'ytdlp_not_installed' };
+    }
+    return { transcript: null, reason: 'ytdlp_failed' };
   }
 }
 
@@ -183,7 +189,11 @@ export function createYoutubeClient({
 } = {}) {
   async function runFallback(videoId) {
     if (transcriptFallbackFn) {
-      return transcriptFallbackFn(videoId);
+      const transcript = await transcriptFallbackFn(videoId);
+      return {
+        transcript,
+        reason: transcript ? null : 'custom_fallback_empty',
+      };
     }
     if (enableYtDlpFallback) {
       return fetchTranscriptViaYtDlp({
@@ -193,7 +203,7 @@ export function createYoutubeClient({
         execFileFn,
       });
     }
-    return null;
+    return { transcript: null, reason: 'fallback_disabled' };
   }
 
   return {
@@ -232,6 +242,11 @@ export function createYoutubeClient({
     },
 
     async fetchTranscript(videoId) {
+      const result = await this.fetchTranscriptWithDiagnostics(videoId);
+      return result.transcript;
+    },
+
+    async fetchTranscriptWithDiagnostics(videoId) {
       try {
         const watchResponse = await fetchFn(`${watchBaseUrl}/watch?v=${videoId}`);
         if (!watchResponse.ok) {
@@ -253,11 +268,14 @@ export function createYoutubeClient({
             const payload = await fetchJsonPayload(fetchFn, url);
             const transcript = payload ? transcriptFromJson3(payload) : null;
             if (transcript) {
-              return transcript;
+              return { transcript, reason: null };
             }
           }
 
-          return runFallback(videoId);
+          const fallback = await runFallback(videoId);
+          return fallback.transcript
+            ? fallback
+            : { transcript: null, reason: fallback.reason || 'no_caption_tracks' };
         }
 
         const transcriptUrl = `${baseUrl}&fmt=json3`;
@@ -265,7 +283,14 @@ export function createYoutubeClient({
         if (!payload) {
           return runFallback(videoId);
         }
-        return transcriptFromJson3(payload);
+        const transcript = transcriptFromJson3(payload);
+        if (!transcript) {
+          const fallback = await runFallback(videoId);
+          return fallback.transcript
+            ? fallback
+            : { transcript: null, reason: fallback.reason || 'caption_payload_empty' };
+        }
+        return { transcript, reason: null };
       } catch {
         return runFallback(videoId);
       }

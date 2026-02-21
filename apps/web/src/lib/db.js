@@ -8,6 +8,10 @@ export const REQUIRED_TABLES = [
   'video_player_mentions',
   'player_metrics_snapshot',
   'recommendations_snapshot',
+  'elite_managers_snapshot',
+  'elite_manager_picks_snapshot',
+  'elite_template_snapshot',
+  'team_strategy_insights',
   'pipeline_runs',
   'pipeline_events',
 ];
@@ -33,12 +37,36 @@ class InMemoryDB {
       throw new Error(`Table ${table} not found`);
     }
 
+    const payload = structuredClone(row);
     if (rows.length === 0) {
-      rows.push(structuredClone(row));
+      rows.push(payload);
       return;
     }
 
-    rows[0] = { ...rows[0], ...structuredClone(row) };
+    if (table === 'settings') {
+      rows[0] = { ...rows[0], ...payload };
+      return;
+    }
+
+    const id = payload?.id;
+    if (id) {
+      const index = rows.findIndex((item) => item?.id === id);
+      if (index >= 0) {
+        rows[index] = { ...rows[index], ...payload };
+        return;
+      }
+    }
+
+    const runId = payload?.run_id;
+    if (runId) {
+      const index = rows.findIndex((item) => item?.run_id === runId);
+      if (index >= 0) {
+        rows[index] = { ...rows[index], ...payload };
+        return;
+      }
+    }
+
+    rows.push(payload);
   }
 
   async insert(table, row) {
