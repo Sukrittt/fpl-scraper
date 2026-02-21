@@ -281,118 +281,131 @@ export default function DashboardApp({
   }
 
   return (
-    <main className="cockpit-surface mx-auto max-w-[1320px] px-4 pt-10 pb-10 md:px-8 md:pt-12 md:pb-12">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-cyan-50">FPL Strategy Cockpit</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-400 md:text-base">
-            Live decision desk blending model scores, elite-manager templates, and tactical momentum.
-          </p>
+    <main className="cockpit-surface mx-auto max-w-[1320px] px-3 pb-8 pt-7 md:px-6 md:pb-10 md:pt-9">
+      <section className="mac-window mb-4 overflow-hidden rounded-2xl">
+        <div className="mac-window-header flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="window-controls" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </span>
+            <p className="text-[11px] font-medium uppercase tracking-[0.11em] text-zinc-400">FPL Strategy Cockpit</p>
+          </div>
+          <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-[11px] text-slate-300">
+            <span className={`sync-dot ${isSyncing ? 'is-active' : ''}`} />
+            <span className={`sync-ring ${isSyncing ? 'is-active' : ''}`} />
+            <span>{isSyncing ? 'Syncing live feeds' : 'Live feed idle'}</span>
+            <Badge variant="secondary">Updated {fmtDate(updatedAtIso)}</Badge>
+          </div>
         </div>
-        <div className="flex items-center gap-3 rounded-full border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-xs text-slate-300">
-          <span className={`sync-dot ${isSyncing ? 'is-active' : ''}`} />
-          <span className={`sync-ring ${isSyncing ? 'is-active' : ''}`} />
-          <span>{isSyncing ? 'Syncing live feeds' : 'Live feed idle'}</span>
-          <Badge variant="secondary" className="border border-slate-600 bg-slate-800 text-slate-100">Updated {fmtDate(updatedAtIso)}</Badge>
-        </div>
-      </header>
 
-      <section className="mb-4 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-        <span>Data freshness: {freshnessSeconds === null ? 'n/a' : `${freshnessSeconds}s ago`}</span>
-        <span>Poll cadence: 45s</span>
-        <span>Last poll: {sinceLastPoll === null ? 'n/a' : `${sinceLastPoll}s ago`}</span>
-        {liveError ? <span className="text-rose-400">{liveError}</span> : null}
-        <span className="hidden">{nowTick}</span>
-      </section>
+        <div className="p-4 md:p-5">
+          <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-100 md:text-3xl">FPL Strategy Desk</h1>
+              <p className="mt-1 max-w-3xl text-[12px] text-zinc-400 md:text-[13px]">
+                Live decision desk blending model scores, elite-manager templates, and tactical momentum.
+              </p>
+            </div>
+          </header>
+
+          <section className="mb-4 flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="mac-chip px-2.5 py-1">Data freshness: {freshnessSeconds === null ? 'n/a' : `${freshnessSeconds}s ago`}</span>
+            <span className="mac-chip px-2.5 py-1">Poll cadence: 45s</span>
+            <span className="mac-chip px-2.5 py-1">Last poll: {sinceLastPoll === null ? 'n/a' : `${sinceLastPoll}s ago`}</span>
+            {liveError ? <span className="mac-chip px-2.5 py-1 text-rose-300">{liveError}</span> : null}
+            <span className="hidden">{nowTick}</span>
+          </section>
 
       {!strategyEnabled ? (
-        <Card className="neon-card mb-4 border-dashed">
-          <CardContent className="pt-6 text-sm text-slate-400">
+        <Card className="mb-4 border-dashed border-white/[0.15] bg-black/[0.2]">
+          <CardContent className="pt-4 text-[12px] text-zinc-400">
             Strategy dashboard is disabled. Set <code>ENABLE_STRATEGY_DASHBOARD=1</code> to enable Template Pulse, Team vs Elite, and Transfer Radar strategy panels.
           </CardContent>
         </Card>
       ) : null}
 
       <section className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Card className={`neon-card ${isSyncing ? 'poll-shimmer' : ''}`}>
+        <Card className={isSyncing ? 'poll-shimmer' : ''}>
           <CardHeader className="pb-2"><CardDescription>Transfer Signals</CardDescription></CardHeader>
-          <CardContent className="text-xl font-semibold text-cyan-100">{kpis.buy} / {kpis.sell} / {kpis.hold}</CardContent>
+          <CardContent className="text-lg font-semibold text-slate-100">{kpis.buy} / {kpis.sell} / {kpis.hold}</CardContent>
         </Card>
-        <Card className={`neon-card ${isSyncing ? 'poll-shimmer' : ''}`}>
+        <Card className={isSyncing ? 'poll-shimmer' : ''}>
           <CardHeader className="pb-2"><CardDescription>Model Confidence</CardDescription></CardHeader>
-          <CardContent className="text-xl font-semibold text-cyan-100">{kpis.avgConfidence}%</CardContent>
+          <CardContent className="text-lg font-semibold text-slate-100">{kpis.avgConfidence}%</CardContent>
         </Card>
-        <Card className={`neon-card ${isSyncing ? 'poll-shimmer' : ''}`}>
+        <Card className={isSyncing ? 'poll-shimmer' : ''}>
           <CardHeader className="pb-2"><CardDescription>Latest Run</CardDescription></CardHeader>
-          <CardContent className="truncate text-xl font-semibold text-cyan-100">{kpis.latestRun}</CardContent>
+          <CardContent className="truncate text-lg font-semibold text-slate-100">{kpis.latestRun}</CardContent>
         </Card>
-        <Card className={`neon-card ${isSyncing ? 'poll-shimmer' : ''}`}>
+        <Card className={isSyncing ? 'poll-shimmer' : ''}>
           <CardHeader className="pb-2"><CardDescription>Team Fit Confidence</CardDescription></CardHeader>
-          <CardContent className="text-xl font-semibold text-cyan-100">{gap.confidence || 0}%</CardContent>
+          <CardContent className="text-lg font-semibold text-slate-100">{gap.confidence || 0}%</CardContent>
         </Card>
       </section>
 
       <section className="mb-4 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
-        <Card className="neon-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Template Pulse</CardTitle>
+            <CardTitle>Template Pulse</CardTitle>
             <CardDescription>Elite ownership and captaincy consensus.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-3 text-[12px]">
             <div>
-              <p className="mb-1 text-xs uppercase text-slate-400">Top Owned</p>
-              <ul className="space-y-1 text-slate-200">{pulse.topOwned.length ? pulse.topOwned.slice(0, 4).map((row) => <li key={`owned-${row.player_id}`}>#{row.player_id} · {n(row.template_ownership_pct)}%</li>) : <li>None</li>}</ul>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Top Owned</p>
+              <ul className="space-y-1 text-slate-200">{pulse.topOwned.length ? pulse.topOwned.slice(0, 4).map((row) => <li key={`owned-${row.player_id}`}>#{row.player_id} · {n(row.template_ownership_pct)}%</li>) : <li className="text-zinc-500">None</li>}</ul>
             </div>
             <div>
-              <p className="mb-1 text-xs uppercase text-slate-400">Captain Trend</p>
-              <ul className="space-y-1 text-slate-200">{pulse.topCaptains.length ? pulse.topCaptains.slice(0, 3).map((row) => <li key={`cap-${row.player_id}`}>#{row.player_id} · {n(row.captain_pct)}%</li>) : <li>None</li>}</ul>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Captain Trend</p>
+              <ul className="space-y-1 text-slate-200">{pulse.topCaptains.length ? pulse.topCaptains.slice(0, 3).map((row) => <li key={`cap-${row.player_id}`}>#{row.player_id} · {n(row.captain_pct)}%</li>) : <li className="text-zinc-500">None</li>}</ul>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="neon-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your Team vs Elite</CardTitle>
+            <CardTitle>Your Team vs Elite</CardTitle>
             <CardDescription>Coverage and structure mismatch signals.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-slate-200">
+          <CardContent className="space-y-2 text-[12px] text-slate-200">
             <p>Template gaps to fill: <strong>{gap.inCount}</strong></p>
             <p>Likely overexposed slots: <strong>{gap.outCount}</strong></p>
-            <p className="text-slate-400">{strategyTeam?.why || 'No team strategy insight yet.'}</p>
+            <p className="text-zinc-400">{strategyTeam?.why || 'No team strategy insight yet.'}</p>
             {strategyTeam?.diagnostic_code ? (
-              <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
+              <p className="rounded-md border border-amber-500/[0.35] bg-amber-500/[0.1] px-2 py-1 text-[11px] text-amber-100">
                 Diagnostic: {strategyTeam.diagnostic_code}
               </p>
             ) : null}
           </CardContent>
         </Card>
 
-        <Card className="neon-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Transfer Radar</CardTitle>
+            <CardTitle>Transfer Radar</CardTitle>
             <CardDescription>Suggested IN/OUT pairs with tactical framing.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 text-sm text-slate-200">
+          <CardContent className="grid gap-3 text-[12px] text-slate-200">
             <div>
-              <p className="mb-1 text-xs uppercase text-slate-400">IN</p>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">IN</p>
               <ul className="space-y-2">{(strategyTeam?.recommended_in || []).slice(0, 5).map((row) => {
                 const rec = recByPlayerId.get(Number(row.player_id));
                 return (
-                  <li key={`in-${row.player_id}`}>
+                  <li key={`in-${row.player_id}`} className="rounded-md border border-white/10 bg-black/20 px-2 py-1.5">
                     <p>{row.player_name} ({n(row.template_ownership_pct)}%)</p>
-                    <p className="text-xs text-cyan-300">Template gap closed, momentum +{n(row.buy_momentum)}, risk {rec?.risk_tier || 'balanced'}</p>
+                    <p className="text-[11px] text-zinc-400">Template gap closed, momentum +{n(row.buy_momentum)}, risk {rec?.risk_tier || 'balanced'}</p>
                   </li>
                 );
               })}</ul>
             </div>
             <div>
-              <p className="mb-1 text-xs uppercase text-slate-400">OUT</p>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">OUT</p>
               <ul className="space-y-2">{(strategyTeam?.recommended_out || []).slice(0, 5).map((row) => {
                 const rec = recByPlayerId.get(Number(row.player_id));
                 return (
-                  <li key={`out-${row.player_id}`}>
+                  <li key={`out-${row.player_id}`} className="rounded-md border border-white/10 bg-black/20 px-2 py-1.5">
                     <p>{row.player_name}</p>
-                    <p className="text-xs text-rose-300">Momentum pressure -{n(row.sell_momentum)}, ownership {n(row.template_ownership_pct)}%, risk {rec?.risk_tier || 'balanced'}</p>
+                    <p className="text-[11px] text-zinc-400">Momentum pressure -{n(row.sell_momentum)}, ownership {n(row.template_ownership_pct)}%, risk {rec?.risk_tier || 'balanced'}</p>
                   </li>
                 );
               })}</ul>
@@ -400,18 +413,18 @@ export default function DashboardApp({
           </CardContent>
         </Card>
 
-        <Card className="neon-card">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">Market Momentum</CardTitle>
+            <CardTitle>Market Momentum</CardTitle>
             <CardDescription>Most bought and sold by elite cohort.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2 text-sm text-slate-200">
+          <CardContent className="grid gap-2 text-[12px] text-slate-200">
             <div>
-              <p className="mb-1 text-xs uppercase text-slate-400">Rising</p>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Rising</p>
               <ul className="space-y-1">{pulse.rising.slice(0, 4).map((row) => <li key={`rise-${row.player_id}`}>#{row.player_id} +{n(row.buy_momentum)}</li>)}</ul>
             </div>
             <div>
-              <p className="mb-1 text-xs uppercase text-slate-400">Falling</p>
+              <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Falling</p>
               <ul className="space-y-1">{pulse.falling.slice(0, 4).map((row) => <li key={`fall-${row.player_id}`}>#{row.player_id} -{n(row.sell_momentum)}</li>)}</ul>
             </div>
           </CardContent>
@@ -419,34 +432,34 @@ export default function DashboardApp({
       </section>
 
       <section className="mb-4 flex flex-wrap gap-2">
-        <Button variant={activePanel === 'recommendations' ? 'default' : 'secondary'} onClick={() => setActivePanel('recommendations')}>Recommendations</Button>
-        <Button variant={activePanel === 'pipeline' ? 'default' : 'secondary'} onClick={() => setActivePanel('pipeline')}>Pipeline Health</Button>
-        <Button variant={activePanel === 'videos' ? 'default' : 'secondary'} onClick={() => setActivePanel('videos')}>Video Diagnostics</Button>
+        <Button size="sm" variant={activePanel === 'recommendations' ? 'default' : 'secondary'} onClick={() => setActivePanel('recommendations')}>Recommendations</Button>
+        <Button size="sm" variant={activePanel === 'pipeline' ? 'default' : 'secondary'} onClick={() => setActivePanel('pipeline')}>Pipeline Health</Button>
+        <Button size="sm" variant={activePanel === 'videos' ? 'default' : 'secondary'} onClick={() => setActivePanel('videos')}>Video Diagnostics</Button>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <Card className="neon-card lg:col-span-2">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Controls</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="grid gap-3" onSubmit={onSaveSettings}>
-              <label className="text-sm font-medium" htmlFor="entry-id">FPL Entry ID</label>
+              <label className="text-[12px] font-medium text-slate-300" htmlFor="entry-id">FPL Entry ID</label>
               <Input id="entry-id" type="number" min="1" value={entryId} onChange={(e) => setEntryId(e.target.value)} required />
-              <label className="text-sm font-medium" htmlFor="channel-ids">YouTube Channel IDs (one per line)</label>
+              <label className="text-[12px] font-medium text-slate-300" htmlFor="channel-ids">YouTube Channel IDs (one per line)</label>
               <Textarea id="channel-ids" rows="5" value={channelsText} onChange={(e) => setChannelsText(e.target.value)} required />
               <div className="flex flex-wrap gap-2">
                 <Button type="submit">Save Settings</Button>
                 <Button type="button" variant="secondary" onClick={onRunSync}>Run Sync Now</Button>
                 {strategyEnabled ? <Button type="button" variant="outline" onClick={onRunStrategy}>Run Strategy Refresh</Button> : null}
               </div>
-              <p className={`text-sm ${statusError ? 'text-destructive' : 'text-slate-400'}`}>{status}</p>
+              <p className={`text-[12px] ${statusError ? 'text-destructive' : 'text-zinc-400'}`}>{status}</p>
             </form>
           </CardContent>
         </Card>
 
         {activePanel === 'recommendations' ? (
-          <Card className="neon-card lg:col-span-2">
+          <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle>Recommendation Explorer</CardTitle>
               <CardDescription>Showing {Math.min(filteredRecommendations.length, 220)} of {recommendations.length} players.</CardDescription>
@@ -461,7 +474,7 @@ export default function DashboardApp({
                   <option value="HOLD">Hold</option>
                 </Select>
                 <div className="grid gap-1">
-                  <label className="text-sm text-slate-400" htmlFor="min-confidence">Min confidence {minConfidence}%</label>
+                  <label className="text-[11px] text-zinc-400" htmlFor="min-confidence">Min confidence {minConfidence}%</label>
                   <Input
                     id="min-confidence"
                     type="range"
@@ -513,23 +526,23 @@ export default function DashboardApp({
 
         {activePanel === 'pipeline' ? (
           <>
-            <Card className="neon-card">
+            <Card>
               <CardHeader><CardTitle>Recent Runs</CardTitle></CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm text-slate-300">
+                <ul className="space-y-2 text-[12px] text-slate-300">
                   {sortedRuns.map((run) => <li key={run.run_id}><code>{run.run_id}</code> - {run.status || 'unknown'} - {fmtDate(run.started_at)}</li>)}
                 </ul>
               </CardContent>
             </Card>
 
-            <Card className="neon-card">
+            <Card>
               <CardHeader><CardTitle>Event Timeline</CardTitle></CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-2 text-[12px]">
                   {sortedEvents.map((row) => (
-                    <li key={`${row.run_id}-${row.created_at}-${row.message}`} className="rounded-md border border-slate-700 p-2">
+                    <li key={`${row.run_id}-${row.created_at}-${row.message}`} className="rounded-md border border-white/10 bg-black/20 p-2">
                       <p><strong>[{row.level || 'info'}]</strong> {row.message || ''}</p>
-                      <span className="text-xs text-slate-400">{fmtDate(row.created_at)}</span>
+                      <span className="text-[11px] text-slate-500">{fmtDate(row.created_at)}</span>
                     </li>
                   ))}
                 </ul>
@@ -539,12 +552,12 @@ export default function DashboardApp({
         ) : null}
 
         {activePanel === 'videos' ? (
-          <Card className="neon-card lg:col-span-2">
+          <Card className="lg:col-span-2">
             <CardHeader><CardTitle>Video Diagnostics (Latest 14)</CardTitle></CardHeader>
             <CardContent>
               <div className="mb-3 flex flex-wrap gap-2">
                 {videoReasonStats.map(([reason, count]) => (
-                  <span key={reason} className="rounded-full border border-slate-700 bg-slate-900/80 px-3 py-1 text-xs text-slate-300">
+                  <span key={reason} className="mac-chip px-3 py-1 text-[11px]">
                     {reason}: {count}
                   </span>
                 ))}
@@ -572,6 +585,8 @@ export default function DashboardApp({
             </CardContent>
           </Card>
         ) : null}
+      </section>
+        </div>
       </section>
     </main>
   );
