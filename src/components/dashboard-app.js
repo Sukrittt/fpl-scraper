@@ -59,6 +59,79 @@ function coverageGap(strategyTeam) {
   };
 }
 
+function formatPlayerLabel({ playerId, playerName }) {
+  if (playerName) return `${playerName} (#${playerId})`;
+  return `#${playerId}`;
+}
+
+function buildUpcomingWeekPlan({ pulse, strategyTeam, gap, playerNameById }) {
+  const recommendedIn = strategyTeam?.recommended_in || [];
+  const recommendedOut = strategyTeam?.recommended_out || [];
+  const topCaptain = pulse?.topCaptains?.[0] || null;
+  const topOwned = pulse?.topOwned?.[0] || null;
+
+  const buyTarget = recommendedIn[0]
+    ? formatPlayerLabel({
+      playerId: recommendedIn[0].player_id,
+      playerName: recommendedIn[0].player_name || playerNameById.get(Number(recommendedIn[0].player_id)),
+    })
+    : topOwned
+      ? formatPlayerLabel({
+        playerId: topOwned.player_id,
+        playerName: topOwned.player_name || playerNameById.get(Number(topOwned.player_id)),
+      })
+      : null;
+
+  const sellTarget = recommendedOut[0]
+    ? formatPlayerLabel({
+      playerId: recommendedOut[0].player_id,
+      playerName: recommendedOut[0].player_name || playerNameById.get(Number(recommendedOut[0].player_id)),
+    })
+    : null;
+
+  const captainTarget = topCaptain
+    ? formatPlayerLabel({
+      playerId: topCaptain.player_id,
+      playerName: topCaptain.player_name || playerNameById.get(Number(topCaptain.player_id)),
+    })
+    : null;
+
+  const doNow = [
+    buyTarget
+      ? `Make this transfer first: bring in ${buyTarget}.`
+      : 'No clear buy target yet. Refresh strategy after latest data sync.',
+    captainTarget
+      ? `Captain ${captainTarget} (${n(topCaptain.captain_pct)}% elite captaincy).`
+      : 'No strong captain consensus yet, so prioritize fixture/form checks.',
+  ];
+
+  const optional = [
+    gap?.inCount > 0
+      ? `If budget allows, close one more template gap (${gap.inCount} currently open).`
+      : 'Optional upside move: roll transfer or make a low-risk fixture play.',
+  ];
+
+  const avoid = [
+    sellTarget
+      ? `Avoid holding ${sellTarget} if you need one clear sell this week.`
+      : 'Avoid forcing a defensive transfer without a clear sell signal.',
+    'Avoid overreacting to flat momentum; prioritize ownership and captaincy signals.',
+  ];
+
+  const headline = gap?.confidence >= 70
+    ? 'Plan is stable. Execute one focused move and protect captain upside.'
+    : 'Plan is still fragile. Reduce risk and align closer to elite template this week.';
+
+  return { headline, doNow, optional, avoid };
+}
+
+function detectCurrentGw({ strategyTeam, strategyTemplate }) {
+  const teamGw = Number(strategyTeam?.snapshot_gw || 0);
+  if (teamGw > 0) return teamGw;
+  const templateGw = Number(strategyTemplate?.[0]?.snapshot_gw || 0);
+  return templateGw > 0 ? templateGw : null;
+}
+
 function freshnessFromRows(rows = []) {
   const first = rows[0];
   return first?.data_freshness?.fetched_at || first?.updated_at || first?.created_at || null;
@@ -181,6 +254,43 @@ export default function DashboardApp({
   const gap = useMemo(() => coverageGap(strategyTeam), [strategyTeam]);
 
   const recByPlayerId = useMemo(() => new Map(recommendations.map((r) => [Number(r.player_id), r])), [recommendations]);
+  const playerNameById = useMemo(() => {
+    const map = new Map();
+    for (const row of recommendations) {
+      const id = Number(row.player_id || 0);
+      if (!id) continue;
+      if (row.player_name) map.set(id, row.player_name);
+    }
+    for (const row of strategyTemplate) {
+      const id = Number(row.player_id || 0);
+      if (!id) continue;
+      if (row.player_name) map.set(id, row.player_name);
+    }
+    for (const row of strategyTeam?.recommended_in || []) {
+      const id = Number(row.player_id || 0);
+      if (!id) continue;
+      if (row.player_name) map.set(id, row.player_name);
+    }
+    for (const row of strategyTeam?.recommended_out || []) {
+      const id = Number(row.player_id || 0);
+      if (!id) continue;
+      if (row.player_name) map.set(id, row.player_name);
+    }
+    return map;
+  }, [recommendations, strategyTemplate, strategyTeam]);
+  const upcomingWeekPlan = useMemo(
+    () => buildUpcomingWeekPlan({
+      pulse,
+      strategyTeam,
+      gap,
+      playerNameById,
+    }),
+    [pulse, strategyTeam, gap, playerNameById],
+  );
+  const currentGw = useMemo(
+    () => detectCurrentGw({ strategyTeam, strategyTemplate }),
+    [strategyTeam, strategyTemplate],
+  );
 
   const sortedRuns = useMemo(
     () => [...runs].sort((a, b) => new Date(b.started_at || 0).getTime() - new Date(a.started_at || 0).getTime()).slice(0, 10),
@@ -354,11 +464,23 @@ export default function DashboardApp({
           <CardContent className="space-y-3 text-[12px]">
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Top Owned</p>
-              <ul className="space-y-1 text-slate-200">{pulse.topOwned.length ? pulse.topOwned.slice(0, 4).map((row) => <li key={`owned-${row.player_id}`}>#{row.player_id} · {n(row.template_ownership_pct)}%</li>) : <li className="text-zinc-500">None</li>}</ul>
+              <ul className="space-y-1 text-slate-200">
+                {pulse.topOwned.length ? pulse.topOwned.slice(0, 4).map((row) => (
+                  <li key={`owned-${row.player_id}`}>
+                    {formatPlayerLabel({ playerId: row.player_id, playerName: playerNameById.get(Number(row.player_id)) })} · {n(row.template_ownership_pct)}%
+                  </li>
+                )) : <li className="text-zinc-500">None</li>}
+              </ul>
             </div>
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Captain Trend</p>
-              <ul className="space-y-1 text-slate-200">{pulse.topCaptains.length ? pulse.topCaptains.slice(0, 3).map((row) => <li key={`cap-${row.player_id}`}>#{row.player_id} · {n(row.captain_pct)}%</li>) : <li className="text-zinc-500">None</li>}</ul>
+              <ul className="space-y-1 text-slate-200">
+                {pulse.topCaptains.length ? pulse.topCaptains.slice(0, 3).map((row) => (
+                  <li key={`cap-${row.player_id}`}>
+                    {formatPlayerLabel({ playerId: row.player_id, playerName: playerNameById.get(Number(row.player_id)) })} · {n(row.captain_pct)}%
+                  </li>
+                )) : <li className="text-zinc-500">None</li>}
+              </ul>
             </div>
           </CardContent>
         </Card>
@@ -421,12 +543,81 @@ export default function DashboardApp({
           <CardContent className="grid gap-2 text-[12px] text-slate-200">
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Rising</p>
-              <ul className="space-y-1">{pulse.rising.slice(0, 4).map((row) => <li key={`rise-${row.player_id}`}>#{row.player_id} +{n(row.buy_momentum)}</li>)}</ul>
+              <ul className="space-y-1">
+                {pulse.rising.slice(0, 4).map((row) => (
+                  <li key={`rise-${row.player_id}`}>
+                    {formatPlayerLabel({ playerId: row.player_id, playerName: playerNameById.get(Number(row.player_id)) })} +{n(row.buy_momentum)}
+                  </li>
+                ))}
+              </ul>
             </div>
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-[0.09em] text-zinc-400">Falling</p>
-              <ul className="space-y-1">{pulse.falling.slice(0, 4).map((row) => <li key={`fall-${row.player_id}`}>#{row.player_id} -{n(row.sell_momentum)}</li>)}</ul>
+              <ul className="space-y-1">
+                {pulse.falling.slice(0, 4).map((row) => (
+                  <li key={`fall-${row.player_id}`}>
+                    {formatPlayerLabel({ playerId: row.player_id, playerName: playerNameById.get(Number(row.player_id)) })} -{n(row.sell_momentum)}
+                  </li>
+                ))}
+              </ul>
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mb-4">
+        <Card className="neon-card">
+          <CardHeader>
+            <CardTitle className="text-base">Upcoming Week Plan {currentGw ? `(GW ${currentGw})` : '(GW n/a)'}</CardTitle>
+            <CardDescription>Action summary for the upcoming gameweek from template, team-fit, and captaincy signals.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-slate-200">
+            <p className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-cyan-100">
+              {upcomingWeekPlan.headline}
+            </p>
+            <div>
+              <p className="mb-1 text-xs uppercase text-emerald-300">Do now</p>
+              <ul className="space-y-1">
+                {upcomingWeekPlan.doNow.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-1 text-xs uppercase text-cyan-300">Optional</p>
+              <ul className="space-y-1">
+                {upcomingWeekPlan.optional.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </div>
+            <div>
+              <p className="mb-1 text-xs uppercase text-rose-300">Avoid this week</p>
+              <ul className="space-y-1">
+                {upcomingWeekPlan.avoid.map((line) => <li key={line}>{line}</li>)}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mb-4">
+        <Card className="neon-card">
+          <CardHeader>
+            <CardTitle className="text-base">Template Gaps to Fill {currentGw ? `(GW ${currentGw})` : '(GW n/a)'}</CardTitle>
+            <CardDescription>Players in the elite template that your current team is missing.</CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-200">
+            {(strategyTeam?.recommended_in || []).length ? (
+              <ul className="space-y-2">
+                {(strategyTeam?.recommended_in || []).slice(0, 8).map((row) => (
+                  <li key={`gap-${row.player_id}`}>
+                    <p>{row.player_name || formatPlayerLabel({ playerId: row.player_id, playerName: playerNameById.get(Number(row.player_id)) })}</p>
+                    <p className="text-xs text-cyan-300">
+                      Template ownership {n(row.template_ownership_pct)}% · buy momentum +{n(row.buy_momentum)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No major template gaps detected.</p>
+            )}
           </CardContent>
         </Card>
       </section>

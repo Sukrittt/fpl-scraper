@@ -4,8 +4,17 @@ function unwrapError(result, table, action) {
   }
 }
 
-async function selectFirstRow({ client, table, columns = '*' }) {
-  const query = client.from(table).select(columns);
+async function selectFirstRow({
+  client,
+  table,
+  columns = '*',
+  orderBy = null,
+  ascending = true,
+} = {}) {
+  let query = client.from(table).select(columns);
+  if (orderBy && typeof query.order === 'function') {
+    query = query.order(orderBy, { ascending });
+  }
 
   if (typeof query.limit === 'function') {
     const result = await query.limit(1);
@@ -46,7 +55,13 @@ export function createSupabaseDatabase({ client }) {
       // Settings is treated as a singleton in app logic; preserve the first row id
       // so repeated upserts update in place instead of creating duplicates.
       if (table === 'settings' && !row.id) {
-        const existing = await selectFirstRow({ client, table, columns: 'id' });
+        const existing = await selectFirstRow({
+          client,
+          table,
+          columns: 'id,created_at',
+          orderBy: 'created_at',
+          ascending: false,
+        });
         if (existing?.id) {
           payload = { ...row, id: existing.id };
         }
@@ -63,6 +78,14 @@ export function createSupabaseDatabase({ client }) {
     },
 
     async getOne(table) {
+      if (table === 'settings') {
+        return selectFirstRow({
+          client,
+          table,
+          orderBy: 'created_at',
+          ascending: false,
+        });
+      }
       return selectFirstRow({ client, table });
     },
 

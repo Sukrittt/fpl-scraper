@@ -68,6 +68,28 @@ function dedupeRunRows(rows = []) {
   return [...byRunId.values()];
 }
 
+function buildPlayerNameById({ recommendations = [], teamInsights = [] } = {}) {
+  const map = new Map();
+  for (const row of recommendations) {
+    const playerId = Number(row?.player_id || 0);
+    if (!playerId || !row?.player_name) continue;
+    map.set(playerId, row.player_name);
+  }
+  for (const insight of teamInsights) {
+    for (const row of insight?.recommended_in || []) {
+      const playerId = Number(row?.player_id || 0);
+      if (!playerId || !row?.player_name) continue;
+      map.set(playerId, row.player_name);
+    }
+    for (const row of insight?.recommended_out || []) {
+      const playerId = Number(row?.player_id || 0);
+      if (!playerId || !row?.player_name) continue;
+      map.set(playerId, row.player_name);
+    }
+  }
+  return map;
+}
+
 export async function getSettingsHandler({ db }) {
   const settings = await db.getOne('settings');
   return { status: 200, body: settings || null };
@@ -166,6 +188,9 @@ export async function postSyncRunHandler({ runPipeline }) {
 
 export async function getStrategyTemplateHandler({ db, query = {} }) {
   const rows = await safeGetAll(db, 'elite_template_snapshot');
+  const recommendations = latestRecommendationsBatch(await safeGetAll(db, 'recommendations_snapshot'));
+  const teamInsights = await safeGetAll(db, 'team_strategy_insights');
+  const playerNameById = buildPlayerNameById({ recommendations, teamInsights });
   const gw = Number(query.gw || 0) || Math.max(...rows.map((row) => Number(row.snapshot_gw || 0)));
   const filtered = gw > 0 ? rows.filter((row) => Number(row.snapshot_gw) === gw) : rows;
   const latestByPlayer = new Map();
@@ -182,6 +207,7 @@ export async function getStrategyTemplateHandler({ db, query = {} }) {
     .slice(0, Number(query.limit || 200));
   const body = sorted.map((row) => ({
     ...row,
+    player_name: row.player_name || playerNameById.get(Number(row.player_id)) || null,
     data_freshness: {
       fetched_at: nowIso(),
       source: 'elite_template_snapshot',
