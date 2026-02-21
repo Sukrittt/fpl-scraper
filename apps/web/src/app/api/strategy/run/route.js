@@ -1,12 +1,5 @@
 import { getAppInstance } from '../../../app-instance.js';
 
-const DEFAULT_SETTINGS = {
-  entry_id: 0,
-  ollama_base_url: 'http://127.0.0.1:11434',
-  ollama_model: 'llama3.1:8b-instruct',
-  channels: [],
-};
-
 function isAuthorized(request) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
@@ -24,16 +17,11 @@ export async function POST(request) {
 
   try {
     const app = await getAppInstance();
-    const settings = await app.getSettings();
-    if (!settings.body) {
-      await app.updateSettings(DEFAULT_SETTINGS);
-    }
-
-    const response = await app.manualSync();
+    const response = await app.manualStrategySync();
     return Response.json(response.body, { status: response.status });
   } catch (error) {
     return Response.json(
-      { error: 'sync_failed', message: error?.message || String(error) },
+      { error: 'strategy_sync_failed', message: error?.message || String(error) },
       { status: 500 },
     );
   }

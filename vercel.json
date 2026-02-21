@@ -3,6 +3,10 @@
     {
       "path": "/api/sync/run",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/strategy/run",
+      "schedule": "30 8 * * *"
     }
   ]
 }

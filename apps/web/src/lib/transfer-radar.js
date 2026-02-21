@@ -202,7 +202,60 @@ function renderVideoDiagnostics(videos) {
   ].join('');
 }
 
-export function renderTransferRadar({ loading, error, recommendations, settings = null, runs = [], events = [], videos = [] }) {
+function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null) {
+  const topOwned = [...strategyTemplate]
+    .sort((a, b) => num(b.template_ownership_pct) - num(a.template_ownership_pct))
+    .slice(0, 5);
+  const rising = [...strategyTemplate]
+    .sort((a, b) => num(b.buy_momentum) - num(a.buy_momentum))
+    .slice(0, 5);
+  const falling = [...strategyTemplate]
+    .sort((a, b) => num(b.sell_momentum) - num(a.sell_momentum))
+    .slice(0, 5);
+
+  const inRows = (strategyTeam?.recommended_in || []).slice(0, 5)
+    .map((row) => `<li>${row.player_name || row.player_id}</li>`).join('');
+  const outRows = (strategyTeam?.recommended_out || []).slice(0, 5)
+    .map((row) => `<li>${row.player_name || row.player_id}</li>`).join('');
+  const topRows = topOwned.map((row) => `<li>#${row.player_id} (${num(row.template_ownership_pct)}%)</li>`).join('');
+  const riseRows = rising.map((row) => `<li>#${row.player_id} (+${num(row.buy_momentum)})</li>`).join('');
+  const fallRows = falling.map((row) => `<li>#${row.player_id} (-${num(row.sell_momentum)})</li>`).join('');
+
+  return [
+    '<section class="meta-card wide">',
+    '<h2>Template Pulse</h2>',
+    `<ul class="run-list">${topRows || '<li>No template rows yet.</li>'}</ul>`,
+    '</section>',
+    '<section class="meta-card">',
+    '<h2>Your Team vs Elite</h2>',
+    `<p>Suggested IN: ${(strategyTeam?.recommended_in || []).length}</p>`,
+    `<p>Suggested OUT: ${(strategyTeam?.recommended_out || []).length}</p>`,
+    `<p>${strategyTeam?.why || 'No team insight yet.'}</p>`,
+    '</section>',
+    '<section class="meta-card">',
+    '<h2>Transfer Radar</h2>',
+    `<p><strong>IN</strong></p><ul class="run-list">${inRows || '<li>None</li>'}</ul>`,
+    `<p><strong>OUT</strong></p><ul class="run-list">${outRows || '<li>None</li>'}</ul>`,
+    '</section>',
+    '<section class="meta-card wide">',
+    '<h2>Market Momentum</h2>',
+    `<p><strong>Rising:</strong></p><ul class="run-list">${riseRows || '<li>None</li>'}</ul>`,
+    `<p><strong>Falling:</strong></p><ul class="run-list">${fallRows || '<li>None</li>'}</ul>`,
+    '</section>',
+  ].join('');
+}
+
+export function renderTransferRadar({
+  loading,
+  error,
+  recommendations,
+  settings = null,
+  runs = [],
+  events = [],
+  videos = [],
+  strategyTemplate = [],
+  strategyTeam = null,
+}) {
   if (loading) {
     return '<div>Loading recommendations...</div>';
   }
@@ -228,6 +281,7 @@ export function renderTransferRadar({ loading, error, recommendations, settings 
     renderRecommendationExplorer(recommendations),
     renderControls(settings),
     renderSettings(settings),
+    renderStrategyCockpit(strategyTemplate, strategyTeam),
     renderRunHistory(runs),
     renderEventTimeline(events),
     renderVideoDiagnostics(videos),

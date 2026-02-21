@@ -42,7 +42,15 @@ test('fetchTranscript extracts transcript from YouTube caption tracks', async ()
 
 test('fetchTranscript returns null when watch page has no captions', async () => {
   const fetchFn = async () => responseWithText('<html>No captions</html>');
-  const client = createYoutubeClient({ fetchFn });
+  const client = createYoutubeClient({ fetchFn, enableYtDlpFallback: false });
   const transcript = await client.fetchTranscript('no-caption-video');
   assert.equal(transcript, null);
+});
+
+test('fetchTranscriptWithDiagnostics returns reason code when captions unavailable', async () => {
+  const fetchFn = async () => responseWithText('<html>No captions</html>');
+  const client = createYoutubeClient({ fetchFn, enableYtDlpFallback: false });
+  const result = await client.fetchTranscriptWithDiagnostics('no-caption-video');
+  assert.equal(result.transcript, null);
+  assert.equal(result.reason, 'fallback_disabled');
 });

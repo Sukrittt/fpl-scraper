@@ -6,6 +6,9 @@ import { GET as getRunsRoute } from '../../apps/web/src/app/api/runs/route.js';
 import { GET as getEventsRoute } from '../../apps/web/src/app/api/events/route.js';
 import { GET as getVideosRoute } from '../../apps/web/src/app/api/videos/route.js';
 import { POST as postSyncRoute } from '../../apps/web/src/app/api/sync/run/route.js';
+import { GET as getStrategyTemplateRoute } from '../../apps/web/src/app/api/strategy/template/route.js';
+import { GET as getStrategyTeamRoute } from '../../apps/web/src/app/api/strategy/team/route.js';
+import { POST as postStrategyRoute } from '../../apps/web/src/app/api/strategy/run/route.js';
 import { resetAppInstance } from '../../apps/web/src/app/app-instance.js';
 
 test.beforeEach(() => {
@@ -94,4 +97,26 @@ test('sync run route returns unauthorized when cron secret mismatches', async ()
 
   const response = await postSyncRoute(req);
   assert.equal(response.status, 401);
+});
+
+test('strategy template route returns array JSON', async () => {
+  const req = new Request('http://localhost/api/strategy/template?limit=5');
+  const response = await getStrategyTemplateRoute(req);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(Array.isArray(body), true);
+});
+
+test('strategy team route returns object with diagnostics when empty', async () => {
+  const req = new Request('http://localhost/api/strategy/team?entry_id=123456');
+  const response = await getStrategyTeamRoute(req);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(typeof body, 'object');
+  assert.equal(typeof body.diagnostic_code, 'string');
+});
+
+test('strategy run route requires settings and returns 400 by default', async () => {
+  const response = await postStrategyRoute();
+  assert.equal(response.status, 400);
 });

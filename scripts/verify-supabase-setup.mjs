@@ -9,8 +9,21 @@ const requiredTables = [
   'video_player_mentions',
   'player_metrics_snapshot',
   'recommendations_snapshot',
+  'elite_managers_snapshot',
+  'elite_manager_picks_snapshot',
+  'elite_template_snapshot',
+  'team_strategy_insights',
   'pipeline_runs',
   'pipeline_events',
+];
+const requiredColumns = [
+  { table: 'recommendations_snapshot', column: 'run_id' },
+  { table: 'recommendations_snapshot', column: 'template_ownership_pct' },
+  { table: 'recommendations_snapshot', column: 'template_gap_score' },
+  { table: 'recommendations_snapshot', column: 'momentum_signal' },
+  { table: 'recommendations_snapshot', column: 'risk_tier' },
+  { table: 'recommendations_snapshot', column: 'team_fit_reason' },
+  { table: 'team_strategy_insights', column: 'diagnostic_code' },
 ];
 
 function missingEnvVars() {
@@ -31,6 +44,7 @@ async function main() {
 
   const client = await createSupabaseClientFromEnv();
   const missingTables = [];
+  const missingColumns = [];
   const otherErrors = [];
 
   for (const table of requiredTables) {
@@ -47,8 +61,28 @@ async function main() {
     }
   }
 
+  for (const item of requiredColumns) {
+    const result = await client.from(item.table).select(item.column).limit(1);
+    if (!result.error) {
+      continue;
+    }
+
+    const message = result.error.message || String(result.error);
+    if (new RegExp(`Could not find the '${item.column}' column`, 'i').test(message)) {
+      missingColumns.push(`${item.table}.${item.column}`);
+    } else if (/column .* does not exist/i.test(message)) {
+      missingColumns.push(`${item.table}.${item.column}`);
+    } else {
+      otherErrors.push({ table: `${item.table}.${item.column}`, message });
+    }
+  }
+
   if (missingTables.length > 0) {
     console.error(`Missing tables: ${missingTables.join(', ')}`);
+  }
+
+  if (missingColumns.length > 0) {
+    console.error(`Missing columns: ${missingColumns.join(', ')}`);
   }
 
   if (otherErrors.length > 0) {
@@ -58,7 +92,7 @@ async function main() {
     }
   }
 
-  if (missingTables.length > 0 || otherErrors.length > 0) {
+  if (missingTables.length > 0 || missingColumns.length > 0 || otherErrors.length > 0) {
     process.exit(1);
   }
 
