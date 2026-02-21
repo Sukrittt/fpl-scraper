@@ -3,38 +3,54 @@
 @tailwind utilities;
 
 :root {
-  --background: 224 24% 8%;
-  --foreground: 210 36% 92%;
-  --card: 226 24% 12%;
-  --card-foreground: 210 36% 92%;
-  --primary: 182 93% 54%;
-  --primary-foreground: 224 24% 8%;
-  --secondary: 229 20% 18%;
-  --secondary-foreground: 210 36% 92%;
-  --muted: 229 18% 18%;
-  --muted-foreground: 216 18% 66%;
-  --accent: 231 22% 21%;
-  --accent-foreground: 210 36% 92%;
-  --destructive: 0 70% 55%;
-  --destructive-foreground: 220 33% 96%;
-  --border: 228 20% 26%;
-  --input: 228 20% 26%;
-  --ring: 182 93% 54%;
-  --radius: 0.65rem;
+  --background: 220 7% 7%;
+  --foreground: 220 10% 86%;
+  --card: 220 7% 10%;
+  --card-foreground: 220 10% 86%;
+  --primary: 220 8% 74%;
+  --primary-foreground: 220 8% 10%;
+  --secondary: 220 6% 16%;
+  --secondary-foreground: 220 10% 88%;
+  --muted: 220 6% 14%;
+  --muted-foreground: 0 0% 62%;
+  --accent: 220 6% 20%;
+  --accent-foreground: 220 10% 88%;
+  --destructive: 4 74% 58%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 7% 24%;
+  --input: 220 7% 24%;
+  --ring: 215 18% 70%;
+  --radius: 0.7rem;
 }
 
 * {
   @apply border-border;
 }
 
+html,
+body {
+  min-height: 100%;
+}
+
 body {
   @apply bg-background text-foreground antialiased;
-  font-family: 'Space Grotesk', Manrope, 'Avenir Next', sans-serif;
+  font-family: 'SF Pro Text', 'SF Pro Display', 'SF Pro Icons', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  letter-spacing: -0.01em;
   background-image:
-    radial-gradient(circle at 15% 0%, rgba(0, 250, 255, 0.08), transparent 34%),
-    radial-gradient(circle at 92% 10%, rgba(0, 170, 255, 0.08), transparent 36%),
-    linear-gradient(180deg, #101521 0%, #0c111c 55%, #080c16 100%);
-  min-height: 100vh;
+    radial-gradient(circle at 12% -10%, rgba(255, 255, 255, 0.09), transparent 38%),
+    radial-gradient(circle at 84% 2%, rgba(255, 255, 255, 0.06), transparent 36%),
+    linear-gradient(180deg, #131316 0%, #0f0f11 55%, #09090a 100%);
+}
+
+::selection {
+  background: rgba(188, 196, 214, 0.28);
+  color: #f6f7fb;
+}
+
+code {
+  font-family: 'SF Mono', ui-monospace, Menlo, Monaco, 'Cascadia Mono', 'Segoe UI Mono', monospace;
+  font-size: 0.94em;
 }
 
 .cockpit-surface {
@@ -42,57 +58,70 @@ body {
 }
 
 .cockpit-surface::before {
-  content: '';
-  position: absolute;
-  inset: -12px;
-  z-index: -1;
-  border-radius: 24px;
-  background:
-    linear-gradient(120deg, rgba(13, 26, 44, 0.92), rgba(10, 16, 30, 0.92)),
-    repeating-linear-gradient(
-      90deg,
-      rgba(40, 90, 110, 0.08) 0px,
-      rgba(40, 90, 110, 0.08) 1px,
-      transparent 1px,
-      transparent 36px
-    );
-  border: 1px solid rgba(60, 90, 120, 0.35);
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.45),
-    inset 0 0 60px rgba(0, 255, 255, 0.03);
-  animation: gridShift 16s linear infinite;
+  content: none;
 }
 
-.neon-card {
-  background: linear-gradient(180deg, rgba(24, 33, 49, 0.95), rgba(18, 24, 38, 0.94));
-  border-color: rgba(72, 106, 132, 0.45);
+.mac-window {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(39, 39, 43, 0.92), rgba(23, 23, 26, 0.94));
   box-shadow:
-    inset 0 0 0 1px rgba(0, 240, 255, 0.04),
-    0 8px 26px rgba(0, 0, 0, 0.26);
+    0 10px 30px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.mac-window-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(49, 49, 54, 0.88), rgba(37, 37, 42, 0.72));
+}
+
+.window-controls {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.window-controls span {
+  width: 11px;
+  height: 11px;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.28);
+}
+
+.window-controls span:nth-child(1) {
+  background: #ff5f57;
+}
+
+.window-controls span:nth-child(2) {
+  background: #febc2e;
+}
+
+.window-controls span:nth-child(3) {
+  background: #28c840;
 }
 
 .sync-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 9999px;
-  background: #00d7ff;
-  box-shadow: 0 0 14px rgba(0, 215, 255, 0.9);
+  background: #8e939f;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
 }
 
 .sync-dot.is-active {
+  background: #8be78f;
   animation: syncPulse 1.2s ease-in-out infinite;
 }
 
 .sync-ring {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 9999px;
-  border: 2px solid rgba(0, 215, 255, 0.25);
-  border-top-color: rgba(0, 215, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-top-color: rgba(255, 255, 255, 0.64);
 }
 
 .sync-ring.is-active {
-  animation: spin 0.85s linear infinite;
+  animation: spin 0.9s linear infinite;
 }
 
 .poll-shimmer {
@@ -105,25 +134,60 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(120deg, transparent 0%, rgba(0, 224, 255, 0.11) 40%, transparent 80%);
-  animation: shimmer 1.6s linear infinite;
+  background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.07) 45%, transparent 85%);
+  animation: shimmer 1.9s linear infinite;
+}
+
+.mac-chip {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: hsl(var(--muted-foreground));
+}
+
+input[type='range'] {
+  accent-color: #969cad;
+}
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background: rgba(150, 156, 173, 0.35);
 }
 
 @keyframes syncPulse {
-  0%, 100% { transform: scale(0.85); opacity: 0.75; }
-  50% { transform: scale(1.15); opacity: 1; }
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.72;
+  }
+
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes shimmer {
-  to { transform: translateX(100%); }
-}
-
-@keyframes gridShift {
-  0% { background-position: 0 0, 0 0; }
-  100% { background-position: 0 0, 36px 0; }
+  to {
+    transform: translateX(100%);
+  }
 }
