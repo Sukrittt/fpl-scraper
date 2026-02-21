@@ -281,7 +281,7 @@ export default function DashboardApp({
   }
 
   return (
-    <main className="cockpit-surface mx-auto max-w-[1320px] px-4 py-6 md:px-8 md:py-8">
+    <main className="cockpit-surface mx-auto max-w-[1320px] px-4 pt-10 pb-10 md:px-8 md:pt-12 md:pb-12">
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight text-cyan-50">FPL Strategy Cockpit</h1>

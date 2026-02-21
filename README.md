@@ -50,6 +50,9 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - `/api/settings`
 - `/api/sync/run`
+- `/api/strategy/run`
+- `/api/strategy/template`
+- `/api/strategy/team`
 - `/api/recommendations`
 - `/api/runs`
 - `/api/events`
@@ -67,3 +70,37 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Keep `.env` local and out of source control.
 - Deploy preview builds to Vercel for validation before production.
+
+## What The System Does
+
+The app combines three data lanes into one decision dashboard:
+
+1. `Pipeline sync` ingests YouTube videos, attempts transcript extraction, summarizes sentiment, and writes recommendation rows.
+2. `Strategy refresh` builds elite-manager cohort snapshots, template ownership, momentum deltas, and team-fit insights for your entry.
+3. `Dashboard API` serves the latest run-backed recommendations plus strategy panels and health diagnostics.
+
+## Process Runbook
+
+Use this sequence when operating or troubleshooting production data:
+
+1. Save settings (`entry_id`, channel ids) in the dashboard Controls panel.
+2. Run **Strategy Refresh** first (`/api/strategy/run`) to populate template/team-fit tables.
+3. Run **Sync Now** (`/api/sync/run`) to generate a fresh recommendation batch tied to a new `run_id`.
+4. Validate in dashboard:
+   - Strategy cards are populated (Template Pulse, Team vs Elite, Transfer Radar, Momentum).
+   - Recommendation counts reflect the latest run.
+   - Pipeline Health shows the run completed (not stuck in running).
+5. Use **Video Diagnostics** for transcript failure reasons (`missing_transcript`, `ytdlp_not_installed`, etc.).
+
+## Deployment + Schema Process
+
+When deploying code that changes DB contract:
+
+1. Apply `/scripts/supabase-schema.sql` in Supabase SQL Editor.
+2. Verify setup:
+   - `npm run supabase:verify`
+3. Smoke critical routes:
+   - `npm run smoke:supabase`
+4. Deploy after verify + smoke pass.
+
+This prevents runtime drift between app expectations and Supabase tables.
