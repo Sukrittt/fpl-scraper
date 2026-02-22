@@ -202,9 +202,10 @@ function renderVideoDiagnostics(videos) {
   ].join('');
 }
 
-function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null) {
+function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null, liveGameweek = null) {
   const fmtPlayer = (row) => row?.player_name ? `${row.player_name} (#${row.player_id})` : `#${row?.player_id}`;
-  const currentGw = Number(strategyTeam?.snapshot_gw || strategyTemplate?.[0]?.snapshot_gw || 0) || null;
+  const snapshotGw = Number(strategyTeam?.snapshot_gw || strategyTemplate?.[0]?.snapshot_gw || 0) || null;
+  const currentGw = liveGameweek || snapshotGw;
   const topOwned = [...strategyTemplate]
     .sort((a, b) => num(b.template_ownership_pct) - num(a.template_ownership_pct))
     .slice(0, 5);
@@ -283,6 +284,9 @@ function renderStrategyCockpit(strategyTemplate = [], strategyTeam = null) {
     '</section>',
     '<section class="meta-card wide">',
     `<h2>Upcoming Week Plan ${currentGw ? `(GW ${currentGw})` : '(GW n/a)'}</h2>`,
+    liveGameweek && snapshotGw && liveGameweek !== snapshotGw
+      ? `<p class="stale-note">Plan data from GW ${snapshotGw} — run strategy refresh for GW ${liveGameweek}.</p>`
+      : '',
     '<p>Action summary for the upcoming gameweek from template, team-fit, and captaincy signals.</p>',
     '<p><strong>Do now</strong></p>',
     `<ul class="run-list">${doNowRows}</ul>`,
@@ -309,6 +313,7 @@ export function renderTransferRadar({
   videos = [],
   strategyTemplate = [],
   strategyTeam = null,
+  liveGameweek = null,
 }) {
   if (loading) {
     return '<div>Loading recommendations...</div>';
@@ -335,7 +340,7 @@ export function renderTransferRadar({
     renderRecommendationExplorer(recommendations),
     renderControls(settings),
     renderSettings(settings),
-    renderStrategyCockpit(strategyTemplate, strategyTeam),
+    renderStrategyCockpit(strategyTemplate, strategyTeam, liveGameweek),
     renderRunHistory(runs),
     renderEventTimeline(events),
     renderVideoDiagnostics(videos),

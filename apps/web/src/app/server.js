@@ -92,6 +92,11 @@ export function createApp({ nowFn, youtubeClient, fplClient, ollamaClient, dbPro
       return getStrategyTeamHandler({ db, query });
     },
 
+    async getLiveGameweek() {
+      const gw = await fplClient.fetchCurrentEvent();
+      return { status: 200, body: { gameweek: gw } };
+    },
+
     async manualStrategySync() {
       await dbReady;
       const settings = await db.getOne('settings');
@@ -116,6 +121,12 @@ export function createApp({ nowFn, youtubeClient, fplClient, ollamaClient, dbPro
       const videos = await db.getAll('videos');
       const strategyTemplate = (await getStrategyTemplateHandler({ db, query: { limit: 25 } })).body;
       const strategyTeam = (await getStrategyTeamHandler({ db, query: { entry_id: settings?.entry_id } })).body;
+      let liveGameweek = null;
+      try {
+        liveGameweek = await fplClient.fetchCurrentEvent();
+      } catch {
+        /* fall back to snapshot_gw */
+      }
       return renderTransferRadar({
         loading: false,
         error: null,
@@ -126,6 +137,7 @@ export function createApp({ nowFn, youtubeClient, fplClient, ollamaClient, dbPro
         videos,
         strategyTemplate,
         strategyTeam,
+        liveGameweek,
       });
     },
 
