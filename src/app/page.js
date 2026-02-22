@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function Page() {
   const app = await getAppInstance();
   const strategyEnabled = process.env.ENABLE_STRATEGY_DASHBOARD === '1';
-  const [settings, recommendations, runs, events, videos, strategyTemplate, strategyTeam] = await Promise.all([
+  const [settings, recommendations, runs, events, videos, strategyTemplate, strategyTeam, liveGwRes] = await Promise.all([
     app.getSettings(),
     app.getRecommendations(),
     app.getRuns({ limit: 20 }),
@@ -14,11 +14,13 @@ export default async function Page() {
     app.getVideos({}),
     strategyEnabled ? app.getStrategyTemplate({ limit: 40 }) : Promise.resolve({ body: [] }),
     strategyEnabled ? app.getStrategyTeam({}) : Promise.resolve({ body: null }),
+    app.getLiveGameweek(),
   ]);
 
   return (
     <DashboardApp
       strategyEnabled={strategyEnabled}
+      initialLiveGw={liveGwRes.body?.gameweek || null}
       initialSettings={settings.body}
       initialRecommendations={recommendations.body || []}
       initialRuns={runs.body || []}

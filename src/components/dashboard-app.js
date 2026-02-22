@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card.js';
@@ -146,6 +146,7 @@ function secondsSince(iso) {
 
 export default function DashboardApp({
   strategyEnabled,
+  initialLiveGw,
   initialSettings,
   initialRecommendations,
   initialRuns,
@@ -167,6 +168,7 @@ export default function DashboardApp({
   const [videos, setVideos] = useState(initialVideos || []);
   const [strategyTemplate, setStrategyTemplate] = useState(initialStrategyTemplate || []);
   const [strategyTeam, setStrategyTeam] = useState(initialStrategyTeam || null);
+  const [liveGw, setLiveGw] = useState(initialLiveGw || null);
 
   const [search, setSearch] = useState('');
   const [action, setAction] = useState('ALL');
@@ -177,6 +179,7 @@ export default function DashboardApp({
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState(updatedAtIso || new Date().toISOString());
   const [nowTick, setNowTick] = useState(Date.now());
+  const lastPollRef = useRef(0);
 
   useEffect(() => {
     const id = setInterval(() => setNowTick(Date.now()), 1000);
@@ -190,13 +193,14 @@ export default function DashboardApp({
       setIsSyncing(true);
       setLiveError('');
       try {
-        const [recsRes, runsRes, eventsRes, videosRes, templateRes, teamRes] = await Promise.all([
+        const [recsRes, runsRes, eventsRes, videosRes, templateRes, teamRes, gwRes] = await Promise.all([
           fetch('/api/recommendations'),
           fetch('/api/runs?limit=20'),
           fetch('/api/events?limit=30'),
           fetch('/api/videos'),
           strategyEnabled ? fetch('/api/strategy/template?limit=40') : Promise.resolve(null),
           strategyEnabled ? fetch(`/api/strategy/team?entry_id=${Number(entryId) || 0}`) : Promise.resolve(null),
+          fetch('/api/gameweek'),
         ]);
 
         if (!cancelled && recsRes?.ok) setRecommendations(await recsRes.json());
@@ -205,6 +209,10 @@ export default function DashboardApp({
         if (!cancelled && videosRes?.ok) setVideos(await videosRes.json());
         if (!cancelled && strategyEnabled && templateRes?.ok) setStrategyTemplate(await templateRes.json());
         if (!cancelled && strategyEnabled && teamRes?.ok) setStrategyTeam(await teamRes.json());
+        if (!cancelled && gwRes?.ok) {
+          const gwData = await gwRes.json();
+          if (gwData?.gameweek) setLiveGw(gwData.gameweek);
+        }
 
         if (!cancelled) {
           setLastSyncAt(new Date().toISOString());
@@ -220,8 +228,15 @@ export default function DashboardApp({
       }
     }
 
-    pollData();
-    const intervalId = setInterval(pollData, 45000);
+    const now = Date.now();
+    if (now - lastPollRef.current > 5000) {
+      lastPollRef.current = now;
+      pollData();
+    }
+    const intervalId = setInterval(() => {
+      lastPollRef.current = Date.now();
+      pollData();
+    }, 45000);
     return () => {
       cancelled = true;
       clearInterval(intervalId);
@@ -287,10 +302,11 @@ export default function DashboardApp({
     }),
     [pulse, strategyTeam, gap, playerNameById],
   );
-  const currentGw = useMemo(
+  const snapshotGw = useMemo(
     () => detectCurrentGw({ strategyTeam, strategyTemplate }),
     [strategyTeam, strategyTemplate],
   );
+  const currentGw = liveGw || snapshotGw;
 
   const sortedRuns = useMemo(
     () => [...runs].sort((a, b) => new Date(b.started_at || 0).getTime() - new Date(a.started_at || 0).getTime()).slice(0, 10),
@@ -570,6 +586,9 @@ export default function DashboardApp({
           <CardHeader>
             <CardTitle className="text-base">Upcoming Week Plan {currentGw ? `(GW ${currentGw})` : '(GW n/a)'}</CardTitle>
             <CardDescription>Action summary for the upcoming gameweek from template, team-fit, and captaincy signals.</CardDescription>
+            {liveGw && snapshotGw && liveGw !== snapshotGw ? (
+              <p className="mt-1 text-[11px] text-amber-300">Plan data from GW {snapshotGw} — run strategy refresh for GW {liveGw}.</p>
+            ) : null}
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-slate-200">
             <p className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-cyan-100">
